@@ -1,24 +1,14 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Crear usuario · Numi Admin</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-  <link rel="icon" type="image/png" href="img/logo-numi.png">
-  <link href="css/styles.css" rel="stylesheet">
-</head>
-<body>
-  <main class="auth-wrapper">
+import logoUrl from '../../img/logo-numi.png';
+import { solicitarCuenta } from '../api/auth.api.js';
+import { $, el, icono } from '../utils/dom.js';
+
+export function RegistroPage() {
+  return `<main class="auth-wrapper">
     <div class="card auth-card">
       <div class="row g-0">
         <div class="col-md-5 auth-aside">
           <div class="brand">
-            <img src="img/logo-numi.png" alt="Numi" class="brand-logo">
+            <img src="${logoUrl}" alt="Numi" class="brand-logo">
             <span>
               <span class="brand-name d-block">Numi</span>
               <span class="brand-sub">Panel administrativo</span>
@@ -28,14 +18,14 @@
             <h1 class="mb-3">Registro cerrado</h1>
             <p class="mb-0">Solo un administrador puede crear usuarios. No hay registro abierto.</p>
           </div>
-          <a href="index.html" class="btn btn-outline-light align-self-start"><i class="bi bi-arrow-left me-1"></i> Volver</a>
+          <a href="#/login" class="btn btn-outline-light align-self-start"><i class="bi bi-arrow-left me-1"></i> Volver</a>
         </div>
 
         <div class="col-md-7 auth-form bg-white">
           <h2 class="fw-bold mb-1">Crear usuario</h2>
           <p class="text-secondary mb-4">La cuenta queda pendiente hasta que un administrador la apruebe.</p>
 
-          <form action="index.html">
+          <form>
             <div class="row g-3">
               <div class="col-sm-6">
                 <label for="nombre" class="form-label">Nombre</label>
@@ -55,9 +45,32 @@
         </div>
       </div>
     </div>
-  </main>
+  </main>`;
+}
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="js/app.js"></script>
-</body>
-</html>
+// Solicitud de cuenta: no pide sesión, la cuenta queda pendiente hasta que un administrador la apruebe
+export function mountRegistroPage() {
+  const form = $('form');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const boton = $('button[type="submit"]', form);
+    boton.disabled = true;
+    let ok = true;
+    let mensaje;
+    try {
+      await solicitarCuenta({ nombre: $('#nombre').value, apellido: $('#apellido').value, correo: $('#correo').value });
+      mensaje = 'Solicitud enviada. Un administrador revisará tu cuenta.';
+    } catch (error) {
+      ok = false;
+      mensaje = error.message || 'No se pudo enviar la solicitud.';
+    }
+    $('#avisoRegistro')?.remove();
+    const aviso = el('div', `alert alert-${ok ? 'success' : 'danger'} d-flex align-items-center gap-2`);
+    aviso.id = 'avisoRegistro';
+    aviso.setAttribute('role', 'alert');
+    aviso.append(icono(ok ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'), el('span', '', mensaje));
+    form.before(aviso);
+    if (ok) form.reset();
+    boton.disabled = false;
+  });
+}
